@@ -1,8 +1,10 @@
-# Working with users
+# Working with customers
 
-The Users API lets you list, create, and update the people in your workspace.
+The Customers API lets you list, create, and update the people in your workspace.
 
-## Listing users
+## Listing customers
+
+No authentication is required.
 
 Results are paginated. Use `per_page` to control the page size:
 
@@ -14,17 +16,47 @@ curl "https://api.petstore.example.com/api/v1/users?per_page=50"
 
 | Name     | Type    | Required | Description                       |
 |----------|---------|----------|-----------------------------------|
-| per_page | integer | no       | Number of users per page (max 100). |
-| limit    | string  | no       | Maximum number of users to return. |
+| per_page | integer | no       | Number of customers per page (max 100). |
+| limit    | integer | no       | Maximum number of customers to return. |
 | role     | string  | no       | Filter by role (`admin`, `member`). |
 
-## Fetching a single user
+## Creating a customer
+
+No authentication is required.
 
 ```bash
-curl "https://api.petstore.example.com/api/v1/users/{userId}"
+curl -X POST "https://api.petstore.example.com/api/v1/users" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "ada@example.com", "name": "Ada Lovelace", "role": "member"}'
 ```
 
-The response contains the user's profile:
+A successful request returns the created customer:
+
+```json
+{
+  "id": "7f96b3a2-9c01-4f8e-9a51-1f2d3c4b5a69",
+  "email": "ada@example.com",
+  "name": "Ada Lovelace",
+  "role": "member",
+  "createdAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### Request body
+
+| Name  | Type   | Required | Description              |
+|-------|--------|----------|--------------------------|
+| email | string | yes      | The customer's email address. |
+| name  | string | yes      | The customer's display name. |
+| role  | string | no       | Role for the customer (`admin`, `member`). |
+
+## Fetching a single customer
+
+```bash
+curl "https://api.petstore.example.com/api/v1/users/{id}"
+```
+
+The response contains the customer's profile:
 
 ```json
 {
@@ -35,12 +67,14 @@ The response contains the user's profile:
 }
 ```
 
-## Updating a user
+## Updating a customer
+
+No authentication is required.
 
 Send a partial body with the fields you want to change:
 
 ```bash
-curl -X PATCH "https://api.petstore.example.com/api/v1/users/{userId}" \
+curl -X PATCH "https://api.petstore.example.com/api/v1/users/{id}" \
   -H "Content-Type: application/json" \
   -d '{"name": "Ada King"}'
 ```

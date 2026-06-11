@@ -17,9 +17,9 @@ paths:
     get:
       operationId: listUsers
       summary: List users
-      tags: [Users]
+      tags: [ Users ]
       parameters:
-        - name: per_page
+        - name: pageSize
           in: query
           description: Number of users per page.
           schema:
@@ -31,13 +31,13 @@ paths:
           in: query
           description: Maximum number of users to return.
           schema:
-            type: string
+            type: integer
         - name: role
           in: query
           description: Filter by role.
           schema:
             type: string
-            enum: [admin, member]
+            enum: [ admin, member ]
       responses:
         '200':
           description: A page of users.
@@ -45,7 +45,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [users, total]
+                required: [ users, total ]
                 properties:
                   users:
                     type: array
@@ -56,14 +56,16 @@ paths:
     post:
       operationId: createUser
       summary: Create a user
-      tags: [Users]
+      tags: [ Users ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [name]
+              required:
+                - name
+                - email
               properties:
                 email:
                   type: string
@@ -73,7 +75,7 @@ paths:
                   maxLength: 120
                 role:
                   type: string
-                  enum: [admin, member]
+                  enum: [ admin, member ]
                   default: member
       responses:
         '201':
@@ -83,95 +85,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
 
-  /users/{userId}:
-    parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Identifier of the user.
-        schema:
-          type: string
-    get:
-      operationId: getUser
-      summary: Fetch a single user
-      tags: [Users]
-      responses:
-        '200':
-          description: The requested user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-              example:
-                id: 7f96b3a2-9c01-4f8e-9a51-1f2d3c4b5a69
-                email: ada@example.com
-                name: Ada Lovelace
-                role: member
-        '404':
-          description: User not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    patch:
-      operationId: updateUser
-      summary: Update a user
-      tags: [Users]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-                name:
-                  type: string
-                  maxLength: 120
-                role:
-                  type: string
-                  enum: [admin, member]
-      responses:
-        '200':
-          description: The updated user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          description: User not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    delete:
-      operationId: deleteUser
-      summary: Delete a user
-      tags: [Users]
-      responses:
-        '204':
-          description: The user was deleted.
-        '404':
-          description: User not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
   /orders:
     get:
       operationId: listOrders
       summary: List orders
-      tags: [Orders]
+      tags: [ Orders ]
       parameters:
         - name: status
           in: query
           description: Filter orders by status.
           schema:
             type: string
-            enum: [pending, paid, shipped, cancelled]
+            enum:
+              - pending
+              - paid
+              - shipped
+              - cancelled
+              - refunded
       responses:
         '200':
           description: All orders visible to the caller.
@@ -179,23 +109,25 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [orders]
+                required: [ orders ]
                 properties:
                   orders:
                     type: array
                     items:
                       $ref: '#/components/schemas/Order'
+      security:
+        - bearerAuth: []
     post:
       operationId: createOrder
       summary: Place an order
-      tags: [Orders]
+      tags: [ Orders ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [items]
+              required: [ items ]
               properties:
                 items:
                   type: array
@@ -204,26 +136,33 @@ paths:
                     $ref: '#/components/schemas/OrderItem'
                 couponCode:
                   type: string
+            example:
+              items:
+                - productId: prod-001
+                  quantity: 2
+              couponCode: SAVE10
       responses:
-        '200':
+        "201":
           description: The created order.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                $ref: "#/components/schemas/Order"
+      security:
+        - bearerAuth: []
 
   /auth/login:
     post:
       operationId: login
-      summary: Exchange credentials for a Bearer token
-      tags: [Auth]
+      summary: Exchange credentials for an access token
+      tags: [ Auth ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email, password]
+              required: [ email, password ]
               properties:
                 email:
                   type: string
@@ -231,6 +170,9 @@ paths:
                 password:
                   type: string
                   minLength: 8
+            example:
+              email: user@example.com
+              password: s3cr3tPwd
       responses:
         '200':
           description: A short-lived access token.
@@ -238,7 +180,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [token, expiresIn]
+                required: [ token, expiresIn ]
                 properties:
                   token:
                     type: string
@@ -250,12 +192,116 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      security: []
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identifier of the user.
+        schema:
+          type: string
+    get:
+      operationId: getUser
+      summary: Fetch a single user
+      tags:
+        - Users
+      responses:
+        "200":
+          description: The requested user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: 7f96b3a2-9c01-4f8e-9a51-1f2d3c4b5a69
+                email: ada@example.com
+                name: Ada Lovelace
+                role: member
+                createdAt: 2024-01-15T10:30:00Z
+        "404":
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security: []
+    patch:
+      operationId: updateUser
+      summary: Update a user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+                  maxLength: 120
+                role:
+                  type: string
+                  enum:
+                    - admin
+                    - member
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /orders/{orderId}/items:
+    get:
+      operationId: getOrderItems
+      summary: Get items for an order
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The items belonging to the order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrderItem"
+        "404":
+          description: Order not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   schemas:
     User:
       type: object
-      required: [id, email, name, role, createdAt]
+      required: [ id, email, name, role, createdAt ]
       properties:
         id:
           type: string
@@ -267,13 +313,13 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, member]
+          enum: [ admin, member ]
         createdAt:
           type: string
           format: date-time
     OrderItem:
       type: object
-      required: [productId, quantity]
+      required: [ productId, quantity ]
       properties:
         productId:
           type: string
@@ -282,26 +328,30 @@ components:
           minimum: 1
     Order:
       type: object
-      required: [id, status, items, totalCents, createdAt]
+      required: [ id, status, items, totalCents, createdAt ]
       properties:
         id:
           type: string
           format: uuid
         status:
           type: string
-          enum: [pending, paid, shipped, cancelled]
+          enum: [ pending, paid, shipped, cancelled ]
         items:
           type: array
           items:
             $ref: '#/components/schemas/OrderItem'
         totalCents:
-          type: integer
+          type: number
         createdAt:
           type: string
           format: date-time
     Error:
       type: object
-      required: [error]
+      required: [ error ]
       properties:
         error:
           type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
